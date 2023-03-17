@@ -27,6 +27,8 @@ Future<Map<String, dynamic>> fetchUser(
 
   data['createdAt'] = data['createdAt']?.millisecondsSinceEpoch;
   data['id'] = doc.id;
+  data['imageUrl'] = data['avatar'];
+  data['firstName'] = data['name'];
   data['lastSeen'] = data['lastSeen']?.millisecondsSinceEpoch;
   data['role'] = role;
   data['updatedAt'] = data['updatedAt']?.millisecondsSinceEpoch;

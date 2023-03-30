@@ -123,6 +123,7 @@ class FirebaseChatCore {
         getFirebaseFirestore(),
         roomQuery,
         config.usersCollectionName,
+        config.roomsCollectionName,
       ))
           .first;
 
@@ -145,6 +146,7 @@ class FirebaseChatCore {
         getFirebaseFirestore(),
         oldRoomQuery,
         config.usersCollectionName,
+        config.roomsCollectionName,
       ))
           .first;
 
@@ -293,6 +295,7 @@ class FirebaseChatCore {
             fu,
             getFirebaseFirestore(),
             config.usersCollectionName,
+            config.roomsCollectionName,
           ),
         );
   }
@@ -327,6 +330,7 @@ class FirebaseChatCore {
             getFirebaseFirestore(),
             query,
             config.usersCollectionName,
+            config.roomsCollectionName,
           ),
         );
   }

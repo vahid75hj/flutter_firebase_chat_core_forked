@@ -5,29 +5,29 @@ import 'package:flutter_chat_types/flutter_chat_types.dart' as types;
 /// Extension with one [toShortString] method.
 extension RoleToShortString on types.Role {
   /// Converts enum to the string equal to enum's name.
-  String toShortString() =>
-      toString()
-          .split('.')
-          .last;
+  String toShortString() => toString().split('.').last;
 }
 
 /// Extension with one [toShortString] method.
 extension RoomTypeToShortString on types.RoomType {
   /// Converts enum to the string equal to enum's name.
-  String toShortString() =>
-      toString()
-          .split('.')
-          .last;
+  String toShortString() => toString().split('.').last;
 }
 
 /// Fetches user from Firebase and returns a promise.
-Future<Map<String, dynamic>> fetchUser(FirebaseFirestore instance,
-    String userId,
-    String usersCollectionName, {
-      String? role,
-    }) async {
+Future<Map<String, dynamic>> fetchUser(
+  FirebaseFirestore instance,
+  String userId,
+  String usersCollectionName, {
+  String? role,
+}) async {
   final doc = await instance.collection(usersCollectionName).doc(userId).get();
-
+  if (doc.data() == null) {
+    return {
+      'id': 'DELETE_ACC_$userId',
+      'firstName': 'Deleted Account',
+    };
+  }
   final data = doc.data()!;
 
   data['createdAt'] = data['createdAt']?.millisecondsSinceEpoch;
@@ -45,20 +45,21 @@ Future<Map<String, dynamic>> fetchUser(FirebaseFirestore instance,
 
 /// Returns a list of [types.Room] created from Firebase query.
 /// If room has 2 participants, sets correct room name and image.
-Future<List<types.Room>> processRoomsQuery(User firebaseUser,
-    FirebaseFirestore instance,
-    QuerySnapshot<Map<String, dynamic>> query,
-    String usersCollectionName,
-    String roomCollectionName,) async {
+Future<List<types.Room>> processRoomsQuery(
+  User firebaseUser,
+  FirebaseFirestore instance,
+  QuerySnapshot<Map<String, dynamic>> query,
+  String usersCollectionName,
+  String roomCollectionName,
+) async {
   final futures = query.docs.map(
-        (doc) =>
-        processRoomDocument(
-          doc,
-          firebaseUser,
-          instance,
-          usersCollectionName,
-          roomCollectionName,
-        ),
+    (doc) => processRoomDocument(
+      doc,
+      firebaseUser,
+      instance,
+      usersCollectionName,
+      roomCollectionName,
+    ),
   );
 
   return await Future.wait(futures);
@@ -66,11 +67,12 @@ Future<List<types.Room>> processRoomsQuery(User firebaseUser,
 
 /// Returns a [types.Room] created from Firebase document.
 Future<types.Room> processRoomDocument(
-    DocumentSnapshot<Map<String, dynamic>> doc,
-    User firebaseUser,
-    FirebaseFirestore instance,
-    String usersCollectionName,
-    String roomCollectionName,) async {
+  DocumentSnapshot<Map<String, dynamic>> doc,
+  User firebaseUser,
+  FirebaseFirestore instance,
+  String usersCollectionName,
+  String roomCollectionName,
+) async {
   final data = doc.data()!;
 
   data['createdAt'] = data['createdAt']?.millisecondsSinceEpoch;
@@ -85,20 +87,19 @@ Future<types.Room> processRoomDocument(
 
   final users = await Future.wait(
     userIds.map(
-          (userId) =>
-          fetchUser(
-            instance,
-            userId as String,
-            usersCollectionName,
-            role: userRoles?[userId] as String?,
-          ),
+      (userId) => fetchUser(
+        instance,
+        userId as String,
+        usersCollectionName,
+        role: userRoles?[userId] as String?,
+      ),
     ),
   );
 
   if (type == types.RoomType.direct.toShortString()) {
     try {
       final otherUser = users.firstWhere(
-            (u) => u['id'] != firebaseUser.uid,
+        (u) => u['id'] != firebaseUser.uid,
       );
 
       imageUrl = otherUser['imageUrl'] as String?;
@@ -117,7 +118,7 @@ Future<types.Room> processRoomDocument(
   if (data['lastMessages'] != null) {
     final lastMessages = data['lastMessages'].map((lm) {
       final author = users.firstWhere(
-            (u) => u['id'] == lm['authorId'],
+        (u) => u['id'] == lm['authorId'],
         orElse: () => {'id': lm['authorId'] as String},
       );
 
@@ -132,7 +133,7 @@ Future<types.Room> processRoomDocument(
     data['lastMessages'] = lastMessages;
   }
   if (data['metadata'] == null) {
-    data['metadata'] = Map<String,dynamic>.from({});
+    data['metadata'] = Map<String, dynamic>.from({});
   }
   data['metadata']['unreadCount'] = await unreadMessageCount(
     instance,
@@ -144,16 +145,19 @@ Future<types.Room> processRoomDocument(
   return types.Room.fromJson(data);
 }
 
-Future<int> unreadMessageCount(FirebaseFirestore instance,
-    String roomCollectionName,
-    String roomId,
-    String userId,) async {
+Future<int> unreadMessageCount(
+  FirebaseFirestore instance,
+  String roomCollectionName,
+  String roomId,
+  String userId,
+) async {
   final query = await instance
       .collection(roomCollectionName)
       .doc(roomId)
       .collection('messages')
       .where('authorId', isNotEqualTo: userId)
       .where('status', isEqualTo: 'delivered')
-      .count().get();
+      .count()
+      .get();
   return query.count;
 }

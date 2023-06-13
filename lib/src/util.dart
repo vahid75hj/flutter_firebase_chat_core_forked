@@ -21,7 +21,28 @@ Future<Map<String, dynamic>> fetchUser(
   String usersCollectionName, {
   String? role,
 }) async {
-  final doc = await instance.collection(usersCollectionName).doc(userId).get();
+  DocumentSnapshot<Map<String, dynamic>>? doc;
+  try {
+    doc = await instance
+        .collection(usersCollectionName)
+        .doc(userId)
+        .get(const GetOptions(source: Source.cache));
+  } on FirebaseException catch (ex) {
+    if (ex.code == 'unavailable') {
+      doc = await instance
+          .collection(usersCollectionName)
+          .doc(userId)
+          .get(const GetOptions(source: Source.server));
+    } else {
+      rethrow;
+    }
+  }
+  if (doc.data() == null) {
+    return {
+      'id': 'DELETE_ACC$userId',
+      'firstName': 'Deleted Account',
+    };
+  }
   if (doc.data() == null) {
     return {
       'id': 'DELETE_ACC_$userId',
@@ -39,6 +60,9 @@ Future<Map<String, dynamic>> fetchUser(
   data['lastSeen'] = data['lastSeen']?.millisecondsSinceEpoch;
   data['role'] = role;
   data['updatedAt'] = data['updatedAt']?.millisecondsSinceEpoch;
+  data['metadata'] = {
+    'presence': data['presence'],
+  };
 
   return data;
 }
